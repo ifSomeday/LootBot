@@ -36,6 +36,7 @@ class Loot(commands.Cog):
                 else:
                     await ctx.send("User `{0}` already added to database.".format(username))
 
+
     @commands.command(help="Adds a drop.\n Timestamp should be of the format DD/MM or DD/MM/YY. If no year is specified, the current year will be assumed.")
     @commands.check_any(commands.has_any_role(304173146989133824), is_me())
     async def addLoot(self, ctx, username : str, timestamp : str, *, loot):
@@ -57,8 +58,60 @@ class Loot(commands.Cog):
                 if(ret):
                     return()
 
-                cur.execute("INSERT INTO drops (date, username, loot) VALUES(%s, %s, %s)", (self.dTime, username, loot))
+                try:
+                    cur.execute("INSERT INTO drops (date, username, loot) VALUES(%s, %s, %s)", (self.dTime, username, loot))
+                    await ctx.message.add_reaction('✅')
+                except psycopg2.errors.UniqueViolation as e:
+                    await ctx.send("Duplicate, unable to insert.")
+                except Exception as e:
+                    print("Error inserting: {0}".format(e))
+                    await ctx.send("Unable to insert, contact Will if you think this is in error.")
+
+
+    @commands.command(help="Deletes user and ALL associated drops from database. Use carefully.")
+    @commands.check_any(commands.has_any_role(304173146989133824), is_me())
+    async def deleteUser(self, ctx, username : str):
+        with self.createConnection() as conn:
+            with conn.cursor() as cur:
+
+                ##Validate username and exit if invalid
+                ret = await self.__validateUsername(ctx, cur, username)
+                if(ret):
+                    return()
+
+                r1 = cur.execute("DELETE FROM drops WHERE username ILIKE %s", (username, ))
+                r2 = cur.execute("DELETE FROM users WHERE username ILIKE %s", (username, ))
+                
+                print(r1, r2)
+
                 await ctx.message.add_reaction('✅')
+
+
+    @commands.command(help="Deletes a specific drop from the database. Use carefully.")
+    @commands.check_any(commands.has_any_role(304173146989133824), is_me())
+    async def deleteLoot(self, ctx, username : str, timestamp : str, *, loot):
+        with self.createConnection() as conn:
+            with conn.cursor() as cur:
+
+                ##Validate username and exit if invalid
+                ret = await self.__validateUsername(ctx, cur, username)
+                if(ret):
+                    return()
+
+                ##Validate timestamp, store in self.dTime, and exit if invalid
+                ret = await self.__validateTimestamp(ctx, timestamp)
+                if(ret):
+                    return()
+                
+                ##Validate loot and exit if invalid
+                ret = await self.__validateLoot(ctx, cur, loot)
+                if(ret):
+                    return()
+
+                cur.execute("DELETE FROM drops WHERE date = %s AND username ILIKE %s AND loot ILIKE %s", (self.dTime, username, loot))
+
+                await ctx.message.add_reaction('✅')
+
 
     async def __validateLoot(self, ctx, cur, loot):
         cur.execute("SELECT * FROM drop_table WHERE loot ILIKE %s", (loot, ))
