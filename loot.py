@@ -10,6 +10,7 @@ import io
 
 ##<@&304173988496801792> guild member
 ##<@&304173146989133824> class leader
+##<@&432054737974853644> bot 
 
 def is_me(**perms):
     async def predicate(ctx):
@@ -25,7 +26,7 @@ class Loot(commands.Cog):
 
 
     @commands.command(help="Adds a user to the loot tracking Database.")
-    @commands.check_any(commands.has_any_role(304173146989133824), is_me())
+    @commands.check_any(commands.has_any_role(304173146989133824, 432054737974853644), is_me())
     async def addUser(self, ctx, username : str):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
@@ -38,7 +39,7 @@ class Loot(commands.Cog):
 
 
     @commands.command(help="Adds a drop.\n Timestamp should be of the format DD/MM or DD/MM/YY. If no year is specified, the current year will be assumed.")
-    @commands.check_any(commands.has_any_role(304173146989133824), is_me())
+    @commands.check_any(commands.has_any_role(304173146989133824, 432054737974853644), is_me())
     async def addLoot(self, ctx, username : str, timestamp : str, *, loot):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
@@ -69,7 +70,7 @@ class Loot(commands.Cog):
 
 
     @commands.command(help="Deletes user and ALL associated drops from database. Use carefully.")
-    @commands.check_any(commands.has_any_role(304173146989133824), is_me())
+    @commands.check_any(commands.has_any_role(304173146989133824, 432054737974853644), is_me())
     async def deleteUser(self, ctx, username : str):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
@@ -88,7 +89,7 @@ class Loot(commands.Cog):
 
 
     @commands.command(help="Deletes a specific drop from the database. Use carefully.")
-    @commands.check_any(commands.has_any_role(304173146989133824), is_me())
+    @commands.check_any(commands.has_any_role(304173146989133824, 432054737974853644), is_me())
     async def deleteLoot(self, ctx, username : str, timestamp : str, *, loot):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
@@ -176,7 +177,7 @@ class Loot(commands.Cog):
                 
 
     @commands.command(help="Displays the loot recieved by the given user.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792), is_me())
+    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792, 432054737974853644), is_me())
     async def loot(self, ctx, *, username):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
@@ -201,7 +202,7 @@ class Loot(commands.Cog):
 
 
     @commands.command(help="Displays who has looted the given item.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792), is_me())
+    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792, 432054737974853644), is_me())
     async def looted(self, ctx, *, drop):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
@@ -226,7 +227,7 @@ class Loot(commands.Cog):
 
 
     @commands.command(help="Displays the sources for the given item.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792), is_me())
+    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792, 432054737974853644), is_me())
     async def sources(self, ctx, *, loot):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
@@ -245,7 +246,7 @@ class Loot(commands.Cog):
 
                 
     @commands.command(help="Displays the bosses in the given raid.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792), is_me())
+    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792, 432054737974853644), is_me())
     async def raid(self, ctx, *, raid):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
@@ -264,7 +265,7 @@ class Loot(commands.Cog):
 
 
     @commands.command(help="Displays the possible drops from the given boss.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792), is_me())
+    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792, 432054737974853644), is_me())
     async def boss(self, ctx, *, boss):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
