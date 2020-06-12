@@ -43,6 +43,8 @@ class Loot(commands.Cog):
     async def addLoot(self, ctx, username : str, timestamp : str, *, loot):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
+
+                table = "drops2" if ctx.channel.id == 718219865483116545 else "drops"
                 
                 ##Validate username and exit if invalid
                 ret = await self.__validateUsername(ctx, cur, username)
@@ -60,7 +62,7 @@ class Loot(commands.Cog):
                     return()
 
                 try:
-                    cur.execute("INSERT INTO drops (date, username, loot) VALUES(%s, %s, %s)", (self.dTime, username, loot))
+                    cur.execute("INSERT INTO %s (date, username, loot) VALUES(%s, %s, %s)", (table, self.dTime, username, loot))
                     await ctx.message.add_reaction('✅')
                 except psycopg2.errors.UniqueViolation as e:
                     await ctx.send("Duplicate, unable to insert.")
@@ -82,6 +84,7 @@ class Loot(commands.Cog):
 
                 r1 = cur.execute("DELETE FROM drops WHERE username ILIKE %s", (username, ))
                 r2 = cur.execute("DELETE FROM users WHERE username ILIKE %s", (username, ))
+                r3 = cur.execute("DELETE FROM drops2 WHERE username ILIKE %s", (username, ))
                 
                 print(r1, r2)
 
@@ -93,6 +96,8 @@ class Loot(commands.Cog):
     async def deleteLoot(self, ctx, username : str, timestamp : str, *, loot):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
+
+                table = "drops2" if ctx.channel.id == 718219865483116545 else "drops"
 
                 ##Validate username and exit if invalid
                 ret = await self.__validateUsername(ctx, cur, username)
@@ -109,7 +114,7 @@ class Loot(commands.Cog):
                 if(ret):
                     return()
 
-                cur.execute("DELETE FROM drops WHERE date = %s AND username ILIKE %s AND loot ILIKE %s", (self.dTime, username, loot))
+                cur.execute("DELETE FROM %s WHERE date = %s AND username ILIKE %s AND loot ILIKE %s", (table, self.dTime, username, loot))
 
                 await ctx.message.add_reaction('✅')
 
@@ -182,12 +187,14 @@ class Loot(commands.Cog):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
 
+                table = "drops2" if ctx.channel.id == 718219865483116545 else "drops"
+
                 ##Validate username and exit if invalid
                 ret = await self.__validateUsername(ctx, cur, username)
                 if(ret):
                     return()
 
-                cur.execute("SELECT * FROM drops WHERE username ILIKE %s", (username, ))
+                cur.execute("SELECT * FROM %s WHERE username ILIKE %s", (table, username, ))
                 drops = cur.fetchall()
 
                 dropList = "\n\t".join(["`{0[3]}` - {0[1]}".format(x) for x in drops])
@@ -207,12 +214,14 @@ class Loot(commands.Cog):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
                 
+                table = "drops2" if ctx.channel.id == 718219865483116545 else "drops"
+
                 ##Validate loot and exit if invalid
                 ret = await self.__validateLoot(ctx, cur, drop)
                 if(ret):
                     return()
 
-                cur.execute("SELECT * FROM drops WHERE loot ILIKE %s", (drop, ))
+                cur.execute("SELECT * FROM %s WHERE loot ILIKE %s", (table, drop, ))
                 drops = cur.fetchall()
 
                 dropList = "\n\t".join(["`{0[2]}` - {0[1]}".format(x) for x in drops])
