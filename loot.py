@@ -62,7 +62,7 @@ class Loot(commands.Cog):
                     return()
 
                 try:
-                    cur.execute("INSERT INTO %s (date, username, loot) VALUES(%s, %s, %s)", (table, self.dTime, username, loot))
+                    cur.execute("INSERT INTO {0} (date, username, loot) VALUES(%s, %s, %s)".format(table), (self.dTime, username, loot))
                     await ctx.message.add_reaction('✅')
                 except psycopg2.errors.UniqueViolation as e:
                     await ctx.send("Duplicate, unable to insert.")
@@ -114,7 +114,7 @@ class Loot(commands.Cog):
                 if(ret):
                     return()
 
-                cur.execute("DELETE FROM %s WHERE date = %s AND username ILIKE %s AND loot ILIKE %s", (table, self.dTime, username, loot))
+                cur.execute("DELETE FROM {0} WHERE date = %s AND username ILIKE %s AND loot ILIKE %s".format(table), (self.dTime, username, loot))
 
                 await ctx.message.add_reaction('✅')
 
@@ -194,7 +194,7 @@ class Loot(commands.Cog):
                 if(ret):
                     return()
 
-                cur.execute("SELECT * FROM %s WHERE username ILIKE %s", (table, username, ))
+                cur.execute("SELECT * FROM {0} WHERE username ILIKE %s".format(table), (username, ))
                 drops = cur.fetchall()
 
                 dropList = "\n\t".join(["`{0[3]}` - {0[1]}".format(x) for x in drops])
@@ -221,7 +221,7 @@ class Loot(commands.Cog):
                 if(ret):
                     return()
 
-                cur.execute("SELECT * FROM %s WHERE loot ILIKE %s", (table, drop, ))
+                cur.execute("SELECT * FROM {0} WHERE loot ILIKE %s".format(table), (drop, ))
                 drops = cur.fetchall()
 
                 dropList = "\n\t".join(["`{0[2]}` - {0[1]}".format(x) for x in drops])
