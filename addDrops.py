@@ -6,6 +6,8 @@ import psycopg2
 
 import keys
 
+TABLE = "drops"
+
 def main():
     if(len(sys.argv) > 1):
         filename = sys.argv[1]
@@ -36,7 +38,7 @@ def addCsv(filename):
                             print("{0} - {1} - {2}".format(username, loot, date))
                             continue
                         cur.execute("INSERT INTO users (username) VALUES(%s) ON CONFLICT DO NOTHING", (username, ))
-                        cur.execute("INSERT INTO drops (username, loot, date) VALUES(%s, %s, %s)", (username, loot, date, ))
+                        cur.execute("INSERT INTO {0} (username, loot, date) VALUES(%s, %s, %s) ON CONFLICT DO NOTHING".format(TABLE), (username, loot, date, ))
 
 
 
