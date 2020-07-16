@@ -40,11 +40,5 @@ def addCsv(filename):
                         cur.execute("INSERT INTO users (username) VALUES(%s) ON CONFLICT DO NOTHING", (username, ))
                         cur.execute("INSERT INTO {0} (username, loot, date) VALUES(%s, %s, %s) ON CONFLICT DO NOTHING".format(TABLE), (username, loot, date, ))
 
-
-
-
-
-
-
 if  __name__ == "__main__":
     main()
