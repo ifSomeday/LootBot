@@ -13,6 +13,9 @@ import io
 ##<@&432054737974853644> bot 
 ##<@&684068943941468200> raid 2 gamer
 
+## Combine mod/user role lists from keys.py
+USERS = keys.LOOT_MODS + keys.LOOT_USERS
+
 def is_me(**perms):
     async def predicate(ctx):
         return(ctx.message.author.id == 133811493778096128)
@@ -27,25 +30,26 @@ class Loot(commands.Cog):
 
 
     @commands.command(help="Adds a user to the loot tracking Database.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 432054737974853644), is_me())
+    @commands.check_any(commands.has_any_role(*keys.LOOT_MODS), is_me())
     async def addUser(self, ctx, username : str):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT * FROM users WHERE username ILIKE %s", (username,))
+                cur.execute("SELECT * FROM {0} WHERE username ILIKE %s".format(keys.USERS_TABLE), (username,))
                 if(cur.fetchone() == None):
-                    cur.execute("INSERT INTO users (username) VALUES(%s)", (username,))
+                    cur.execute("INSERT INTO {0} (username) VALUES(%s)".format(keys.USERS_TABLE), ( username,))
                     await ctx.message.add_reaction('✅')
                 else:
                     await ctx.send("User `{0}` already added to database.".format(username))
 
 
     @commands.command(help="Adds a drop.\n Timestamp should be of the format DD/MM or DD/MM/YY. If no year is specified, the current year will be assumed.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 432054737974853644), is_me())
+    @commands.check_any(commands.has_any_role(*keys.LOOT_MODS), is_me())
     async def addLoot(self, ctx, username : str, timestamp : str, *, loot):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
 
-                table = "drops2" if ctx.channel.id == 718219865483116545 else "drops"
+                ##table = "drops2" if ctx.channel.id == 718219865483116545 else "drops"
+                table = keys.SECONDARY_MAPPINGS[ctx.channel.id] if ctx.channel.id in keys.SECONDARY_MAPPINGS else keys.MAIN_DB
                 
                 ##Validate username and exit if invalid
                 ret = await self.__validateUsername(ctx, cur, username)
@@ -73,7 +77,7 @@ class Loot(commands.Cog):
 
 
     @commands.command(help="Deletes user and ALL associated drops from database. Use carefully.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 432054737974853644), is_me())
+    @commands.check_any(commands.has_any_role(*keys.LOOT_MODS), is_me())
     async def deleteUser(self, ctx, username : str):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
@@ -84,7 +88,7 @@ class Loot(commands.Cog):
                     return()
 
                 r1 = cur.execute("DELETE FROM drops WHERE username ILIKE %s", (username, ))
-                r2 = cur.execute("DELETE FROM users WHERE username ILIKE %s", (username, ))
+                r2 = cur.execute("DELETE FROM {0} WHERE username ILIKE %s".format(keys.USERS_TABLE), (username, ))
                 r3 = cur.execute("DELETE FROM drops2 WHERE username ILIKE %s", (username, ))
                 
                 print(r1, r2)
@@ -93,12 +97,12 @@ class Loot(commands.Cog):
 
 
     @commands.command(help="Deletes a specific drop from the database. Use carefully.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 432054737974853644), is_me())
+    @commands.check_any(commands.has_any_role(*keys.LOOT_MODS), is_me())
     async def deleteLoot(self, ctx, username : str, timestamp : str, *, loot):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
 
-                table = "drops2" if ctx.channel.id == 718219865483116545 else "drops"
+                table = keys.SECONDARY_MAPPINGS[ctx.channel.id] if ctx.channel.id in keys.SECONDARY_MAPPINGS else keys.MAIN_DB
 
                 ##Validate username and exit if invalid
                 ret = await self.__validateUsername(ctx, cur, username)
@@ -121,9 +125,9 @@ class Loot(commands.Cog):
 
 
     async def __validateLoot(self, ctx, cur, loot):
-        cur.execute("SELECT * FROM drop_table WHERE loot ILIKE %s", (loot, ))
+        cur.execute("SELECT * FROM {0} WHERE loot ILIKE %s".format(keys.DROPS_TABLE_DB), (loot, ))
         if(cur.fetchone() == None):
-            cur.execute("SELECT *, similarity(loot, %s) FROM drop_table ORDER BY 5 desc LIMIT 5;", (loot, ))
+            cur.execute("SELECT *, similarity(loot, %s) FROM {0} ORDER BY 5 desc LIMIT 5;".format(keys.DROPS_TABLE_DB), (loot, ))
             simList = "\n".join(["`{0[1]}`".format(x) for x in cur.fetchall()])
             await ctx.send("Loot `{0}` not in database.\nDid you mean:\n{1}".format(loot, simList))
             return(1)
@@ -131,9 +135,9 @@ class Loot(commands.Cog):
 
                 
     async def __validateUsername(self, ctx, cur, username):
-        cur.execute("SELECT * FROM users WHERE username ILIKE %s", (username,))
+        cur.execute("SELECT * FROM {0} WHERE username ILIKE %s".format(keys.USERS_TABLE), (username,))
         if(cur.fetchone() == None):
-            cur.execute("SELECT *, similarity(username, %s) FROM users ORDER BY 3 desc LIMIT 5;", (username, ))
+            cur.execute("SELECT *, similarity(username, %s) FROM {0} ORDER BY 3 desc LIMIT 5;".format(keys.USERS_TABLE), (username, ))
             simList = "\n".join(["`{0[1]}`".format(x) for x in cur.fetchall()])
             await ctx.send("User `{0}` not in database.\nYou can add them with ```?addUser {0}```\nOr, did you mean:\n{1}".format(username, simList))
             return(1)
@@ -162,9 +166,9 @@ class Loot(commands.Cog):
 
 
     async def __validateRaid(self, ctx, cur, raid):
-        cur.execute("SELECT * FROM drop_table WHERE raid ILIKE %s", (raid,))
+        cur.execute("SELECT * FROM {0} WHERE raid ILIKE %s".format(keys.DROPS_TABLE_DB), (raid,))
         if(cur.fetchone() == None):
-            cur.execute("SELECT DISTINCT (raid), similarity(raid, %s) FROM drop_table ORDER BY similarity DESC LIMIT 5", (raid, ))
+            cur.execute("SELECT DISTINCT (raid), similarity(raid, %s) FROM {0} ORDER BY similarity DESC LIMIT 5".format(keys.DROPS_TABLE_DB), (raid, ))
             simList = "\n".join(["`{0[0]}`".format(x) for x in cur.fetchall()])
             await ctx.send("Raid `{0}` not in database.\nDid you mean:\n{1}".format(raid, simList))
             return(1)
@@ -172,9 +176,9 @@ class Loot(commands.Cog):
 
 
     async def __validateBoss(self, ctx, cur, boss):
-        cur.execute("SELECT * FROM drop_table WHERE boss ILIKE %s", (boss, ))
+        cur.execute("SELECT * FROM {0} WHERE boss ILIKE %s".format(keys.DROPS_TABLE_DB), (boss, ))
         if(cur.fetchone() == None):
-            cur.execute("SELECT DISTINCT (boss), similarity(boss, %s) FROM drop_table ORDER BY similarity DESC LIMIT 5", (boss, ))
+            cur.execute("SELECT DISTINCT (boss), similarity(boss, %s) FROM {0} ORDER BY similarity DESC LIMIT 5".format(keys.DROPS_TABLE_DB), (boss, ))
             simList = "\n".join(["`{0[0]}`".format(x) for x in cur.fetchall()])
             await ctx.send("Boss `{0}` not in database.\nDid you mean:\n{1}".format(boss, simList))
             return(1)
@@ -183,12 +187,12 @@ class Loot(commands.Cog):
                 
 
     @commands.command(help="Displays the loot recieved by the given user.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792, 684068943941468200, 432054737974853644), is_me())
+    @commands.check_any(commands.has_any_role(*USERS), is_me())
     async def loot(self, ctx, *, username):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
 
-                table = "drops2" if ctx.channel.id == 718219865483116545 else "drops"
+                table = keys.SECONDARY_MAPPINGS[ctx.channel.id] if ctx.channel.id in keys.SECONDARY_MAPPINGS else keys.MAIN_DB
 
                 ##Validate username and exit if invalid
                 ret = await self.__validateUsername(ctx, cur, username)
@@ -210,12 +214,12 @@ class Loot(commands.Cog):
 
 
     @commands.command(help="Displays who has looted the given item.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792, 684068943941468200, 432054737974853644), is_me())
+    @commands.check_any(commands.has_any_role(*USERS), is_me())
     async def looted(self, ctx, *, drop):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
                 
-                table = "drops2" if ctx.channel.id == 718219865483116545 else "drops"
+                table = keys.SECONDARY_MAPPINGS[ctx.channel.id] if ctx.channel.id in keys.SECONDARY_MAPPINGS else keys.MAIN_DB
 
                 ##Validate loot and exit if invalid
                 ret = await self.__validateLoot(ctx, cur, drop)
@@ -237,7 +241,7 @@ class Loot(commands.Cog):
 
 
     @commands.command(help="Displays the sources for the given item.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792, 684068943941468200, 432054737974853644), is_me())
+    @commands.check_any(commands.has_any_role(*USERS), is_me())
     async def sources(self, ctx, *, loot):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
@@ -247,7 +251,7 @@ class Loot(commands.Cog):
                 if(ret):
                     return()
 
-                cur.execute("SELECT * FROM drop_table WHERE loot ILIKE %s", (loot, ))
+                cur.execute("SELECT * FROM {0} WHERE loot ILIKE %s".format(keys.DROPS_TABLE_DB), (loot, ))
                 sources = cur.fetchall()
 
                 sourceList = "\n\t".join(["{0[2]} in {0[3]}".format(x) for x in sources])
@@ -256,7 +260,7 @@ class Loot(commands.Cog):
 
                 
     @commands.command(help="Displays the bosses in the given raid.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792, 684068943941468200, 432054737974853644), is_me())
+    @commands.check_any(commands.has_any_role(*USERS), is_me())
     async def raid(self, ctx, *, raid):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
@@ -266,7 +270,7 @@ class Loot(commands.Cog):
                 if(ret):
                     return()
 
-                cur.execute("SELECT DISTINCT (boss) FROM drop_table WHERE raid ILIKE %s", (raid, ))
+                cur.execute("SELECT DISTINCT (boss) FROM {0} WHERE raid ILIKE %s".format(keys.DROPS_TABLE_DB), (raid, ))
                 bosses = cur.fetchall()
 
                 bossList = "\n\t".join(["`{0[0]}`".format(x) for x in bosses])
@@ -275,7 +279,7 @@ class Loot(commands.Cog):
 
 
     @commands.command(help="Displays the possible drops from the given boss.")
-    @commands.check_any(commands.has_any_role(304173146989133824, 304173988496801792, 684068943941468200, 432054737974853644), is_me())
+    @commands.check_any(commands.has_any_role(*USERS), is_me())
     async def boss(self, ctx, *, boss):
         with self.createConnection() as conn:
             with conn.cursor() as cur:
@@ -285,7 +289,7 @@ class Loot(commands.Cog):
                 if(ret):
                     return()
 
-                cur.execute("SELECT loot FROM drop_table WHERE boss ILIKE %s", (boss, ))
+                cur.execute("SELECT loot FROM {0} WHERE boss ILIKE %s".format(keys.DROPS_TABLE_DB), (boss, ))
                 loot = cur.fetchall()
 
                 lootList = "\n\t".join(["`{0[0]}`".format(x) for x in loot])
