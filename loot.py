@@ -296,6 +296,33 @@ class Loot(commands.Cog):
 
                 await ctx.send("`{0}` can drop:\n\t{1}".format(boss, lootList))
 
+    @commands.command(help="Displays all the loot on a given date.")
+    @commands.check_any(commands.has_any_role(*USERS), is_me())
+    async def lootDate(self, ctx, timestamp : str):
+        with self.createConnection() as conn:
+            with conn.cursor() as cur:
+
+                table = keys.SECONDARY_MAPPINGS[ctx.channel.id] if ctx.channel.id in keys.SECONDARY_MAPPINGS else keys.MAIN_DB
+
+                ##Validate timestamp, store in self.dTime, and exit if invalid
+                ret = await self.__validateTimestamp(ctx, timestamp)
+                if(ret):
+                    return()
+                dateStr = self.dTime.strftime("%D")
+
+                cur.execute("SELECT * FROM {0} WHERE date::date = %s".format(table), (dateStr,))
+
+                drops = cur.fetchall()
+                
+                dropList = "\n\t".join(["`{0[3]}` - `{0[2]}`".format(x) for x in drops])
+                outStr = "All items looted on `{0}`:\n\t{1}".format(dateStr, dropList)
+
+                ##if we can't attach the full log, send as an attachment.
+                if(len(outStr) > 2000):
+                    f = discord.File(io.StringIO("\n".join(["{0[3]} - {0[2]}".format(x) for x in drops])), filename="{0}_drops.txt".format(dateStr).replace("/", "-"))
+                    await ctx.send("Drop Log for `{0}` exceeds the message length limit. Attaching as file.".format(dateStr), file=f)
+                else:
+                    await ctx.send(outStr)
 
     def createConnection(self):
         return(psycopg2.connect(dbname="loot", user=keys.PSQL_USERNAME, password=keys.PSQL_PASSWORD, host="192.168.1.20", port=5432))
