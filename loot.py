@@ -184,6 +184,21 @@ class Loot(commands.Cog):
             return(1)
         return(0)
 
+
+    @commands.command(help="Exports entire database as a csv.")
+    @commands.check_any(commands.has_any_role(*keys.LOOT_MODS), is_me())
+    async def exportCSV(self, ctx):
+        with self.createConnection() as conn:
+            with conn.cursor() as cur:
+
+                table = keys.SECONDARY_MAPPINGS[ctx.channel.id] if ctx.channel.id in keys.SECONDARY_MAPPINGS else keys.MAIN_DB
+
+                cur.execute("SELECT * FROM {0}".format(table))
+                drops = cur.fetchall()
+                dropList = "username,date,loot\n" + "\n".join(["{2},{1},{3}"])
+
+                f = discord.File(io.StringIO(dropList), filename="loot.csv")
+                await ctx.send("Exported csv:", file=f)
                 
 
     @commands.command(help="Displays the loot recieved by the given user.")
