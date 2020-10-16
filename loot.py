@@ -195,7 +195,7 @@ class Loot(commands.Cog):
 
                 cur.execute("SELECT * FROM {0}".format(table))
                 drops = cur.fetchall()
-                dropList = "username,date,loot\n" + "\n".join(["{2},{1},{3}"])
+                dropList = "username,date,loot\n" + "\n".join(["{2},{1},{3}".format(x) for x in drops])
 
                 f = discord.File(io.StringIO(dropList), filename="loot.csv")
                 await ctx.send("Exported csv:", file=f)
